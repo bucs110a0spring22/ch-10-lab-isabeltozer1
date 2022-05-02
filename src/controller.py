@@ -3,10 +3,13 @@ import pygame
 import random
 from src import hero
 from src import enemy
+from src import heart
 
 
 class Controller:
     def __init__(self, width=640, height=480):
+        '''Initializes the controller
+      args: self, width (int), height(int)'''
         pygame.init()
         self.width = width
         self.height = height
@@ -24,10 +27,13 @@ class Controller:
             y = random.randrange(100, 400)
             self.enemies.add(enemy.Enemy("Boogie", x, y, 'assets/enemy.png'))
         self.hero = hero.Hero("Conan", 50, 80, "assets/hero.png")
-        self.all_sprites = pygame.sprite.Group((self.hero,) + tuple(self.enemies))
+        self.heart = heart.heart("assets/heart.jpg")
+        self.all_sprites = pygame.sprite.Group((self.hero,) + tuple(self.enemies) + (self.heart,))
         self.state = "GAME"
 
     def mainLoop(self):
+        '''The main loop of the game
+      args: self'''
         while True:
             if(self.state == "GAME"):
                 self.gameLoop()
@@ -51,26 +57,51 @@ class Controller:
 
             # check for collisions
             fights = pygame.sprite.spritecollide(self.hero, self.enemies, True)
-            if(fights):
+            if fights:
                 for e in fights:
-                    if(self.hero.fight(e)):
+                    if self.hero.fight(e):
                         e.kill()
                         self.background.fill((250, 250, 250))
                     else:
                         self.background.fill((250, 0, 0))
                         self.enemies.add(e)
-
-            # redraw the entire screen
+            else:
+                self.background.fill((250,250,250))
+                
+            healed = self.hero.rect.colliderect(self.heart.rect)
+            if healed :
+                self.Hero.heal()
+                self.background.fill((250,250,250))
+                num_enemies = random.randrange(1,10)
+                for i in range(num_enemies):
+                  x = random.randrange(100, 400)
+                  y = random.randrange(100, 400)
+                  e = enemy.Enemy("Boogie", x, y, 'assets/enemy.png')
+                  self.heart.rect.x = self.hero.rect.x + self.hero.width + 5
+                  self.heart.rect.y = self.hero.rect.y + self.hero.height + 5
+                  self.enemies.add(e)
+                  self.all_sprites.add(e)
+            
+                    
             self.enemies.update()
-            self.screen.blit(self.background, (0, 0))
+            self.heart.update()
+
+            
             if(self.hero.health == 0):
                 self.state = "GAMEOVER"
+                
+            # redraw the entire screen
+            self.screen.blit(self.background, (0, 0)) 
             self.all_sprites.draw(self.screen)
+
+            
 
             # update the screen
             pygame.display.flip()
 
     def gameOver(self):
+        '''The game over loop
+      args: self'''
         self.hero.kill()
         myfont = pygame.font.SysFont(None, 30)
         message = myfont.render('Game Over', False, (0, 0, 0))
